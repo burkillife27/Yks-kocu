@@ -21,10 +21,6 @@ type Mode = 'focus' | 'short-break' | 'long-break';
 type TimerType = 'pomodoro' | 'stopwatch';
 
 export default function Pomodoro({ tasks, settings }: { tasks: Task[], settings: AppSettings }) {
-  const [activeTask, setActiveTask] = useState<Task | null>(null);
-  const [timerType, setTimerType] = useState<TimerType>('pomodoro');
-  const [mode, setMode] = useState<Mode>('focus');
-  
   const timerConfig = settings.pomodoro || {
     workTime: 25,
     shortBreak: 5,
@@ -34,12 +30,84 @@ export default function Pomodoro({ tasks, settings }: { tasks: Task[], settings:
     soundEnabled: true
   };
 
-  const [timeLeft, setTimeLeft] = useState(timerConfig.workTime * 60);
-  const [stopwatchTime, setStopwatchTime] = useState(0);
-  const [isActive, setIsActive] = useState(false);
-  const [sessionsCompleted, setSessionsCompleted] = useState(0);
+  const STORAGE_KEY = 'yks_timer_persistent_state';
+
+  // State initialization with Persistence
+  const [timerType, setTimerType] = useState<TimerType>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved).timerType : 'pomodoro';
+  });
+
+  const [mode, setMode] = useState<Mode>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved).mode : 'focus';
+  });
+
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const data = JSON.parse(saved);
+      if (data.timerType === 'pomodoro') {
+        if (data.isActive) {
+          const elapsed = Math.floor((Date.now() - data.lastUpdated) / 1000);
+          return Math.max(0, data.timeLeft - elapsed);
+        }
+        return data.timeLeft;
+      }
+    }
+    return timerConfig.workTime * 60;
+  });
+
+  const [stopwatchTime, setStopwatchTime] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const data = JSON.parse(saved);
+      if (data.timerType === 'stopwatch') {
+        if (data.isActive) {
+          const elapsed = Math.floor((Date.now() - data.lastUpdated) / 1000);
+          return data.stopwatchTime + elapsed;
+        }
+        return data.stopwatchTime;
+      }
+    }
+    return 0;
+  });
+
+  const [isActive, setIsActive] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved).isActive : false;
+  });
+
+  const [sessionsCompleted, setSessionsCompleted] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved).sessionsCompleted : 0;
+  });
+
+  const [activeTask, setActiveTask] = useState<Task | null>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    const data = saved ? JSON.parse(saved) : null;
+    if (data?.activeTaskId) {
+      return tasks.find(t => t.id === data.activeTaskId) || null;
+    }
+    return null;
+  });
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Persistence Effect
+  useEffect(() => {
+    const state = {
+      timerType,
+      mode,
+      timeLeft,
+      stopwatchTime,
+      isActive,
+      sessionsCompleted,
+      activeTaskId: activeTask?.id || null,
+      lastUpdated: Date.now()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }, [timerType, mode, timeLeft, stopwatchTime, isActive, sessionsCompleted, activeTask]);
 
   const configs = {
     'focus': { label: 'Odaklanma', time: timerConfig.workTime * 60, icon: <Brain size={24} />, color: 'bg-primary' },
@@ -125,11 +193,16 @@ export default function Pomodoro({ tasks, settings }: { tasks: Task[], settings:
     }
   };
 
+  const isFirstMount = useRef(true);
   useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
     if (timerType === 'pomodoro') {
       setTimeLeft(configs[mode].time);
     }
-  }, [mode, timerType, settings.pomodoro]); // Added settings.pomodoro to dependencies to react to changes
+  }, [mode, timerType, settings.pomodoro]);
 
   const toggle = () => setIsActive(!isActive);
   const reset = () => {
