@@ -153,6 +153,7 @@ export class GeminiService {
   ): Promise<Array<{ message: string, type: "warning" | "tip" | "motivation" | "suggestion", actionLabel?: string }>> {
     if (!this.ai) return [{ message: "API Key girilmediği için mentörlük devre dışı.", type: "warning" }];
 
+    const aiContext = await storage.getAiContext();
     const todayProgress = history.filter(t => t.date === new Date().toISOString().split('T')[0] && t.status === 'completed').length;
     const todayTotal = history.filter(t => t.date === new Date().toISOString().split('T')[0]).length;
     const today = new Date().toISOString().split('T')[0];
@@ -188,7 +189,7 @@ export class GeminiService {
       Önerilerin (suggestion) 'actionLabel' alanı mutlaka kısa bir eylem ifadesi olmalı (örn: "Deneme Al", "Süreyi Artır", "Soru Bankası Al", "Kaynak Edin").
  
       ÖĞRENCİ DURUMU:
-      - Profil: ${settings.personalBio || "Belirtilmemiş."}
+      - Profil: ${settings.personalBio || "Belirtilmemiş."} ${aiContext ? `\n      - SON SOHBET BAĞLAMI: ${aiContext}` : ''}
       - Kitaplar: ${JSON.stringify(books.map(b => ({ title: b.title, progress: (b.completedUnits/b.totalUnits)*100, type: b.type, branch: b.branch })))}
       - HIZ ANALİZİ: ${JSON.stringify(performanceAnalysis)}
       - Deneme Gelişimi: ${JSON.stringify(trials.map(t => ({ date: t.date, net: t.net, type: t.type, mistakes: t.mistakes })))}
