@@ -27,19 +27,11 @@ export default function Settings({ settings, routines, books, onRefresh }: { set
     daysToApply: [1, 2, 3, 4, 5],
     startDate: new Date().toISOString().split('T')[0]
   });
-  const [pomodoro, setPomodoro] = useState(settings.pomodoro || {
-    workTime: 25,
-    shortBreak: 5,
-    longBreak: 15,
-    autoStartBreaks: false,
-    autoStartWork: false,
-    soundEnabled: true
-  });
+  const [targetNets, setTargetNets] = useState(settings.targetNets || { tyt: 0, ayt: 0 });
   const [yksDate, setYksDate] = useState(settings.yksDate);
   const [studyStartDate, setStudyStartDate] = useState(settings.studyStartDate || '');
   const [dailyMinutes, setDailyMinutes] = useState(settings.dailyStudyMinutes);
   const [maxDailyBooks, setMaxDailyBooks] = useState(settings.maxDailyBooks || 3);
-  const [targetNets, setTargetNets] = useState(settings.targetNets || { tyt: 0, ayt: 0 });
   const [usage, setUsage] = useState<ApiUsage | null>(null);
   const [showModelInfo, setShowModelInfo] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
@@ -81,7 +73,7 @@ export default function Settings({ settings, routines, books, onRefresh }: { set
   };
 
   const handleSave = async () => {
-    const updated = { ...settings, apiKey, aiModel, aiInstructions, personalBio, adaptiveStudyPlan, pomodoro, yksDate, studyStartDate, dailyStudyMinutes: dailyMinutes, maxDailyBooks, targetNets };
+    const updated = { ...settings, apiKey, aiModel, aiInstructions, personalBio, adaptiveStudyPlan, yksDate, studyStartDate, dailyStudyMinutes: dailyMinutes, maxDailyBooks, targetNets };
     await storage.saveSettings(updated);
     onRefresh();
     alert('Ayarlar kaydedildi.');
@@ -752,82 +744,6 @@ export default function Settings({ settings, routines, books, onRefresh }: { set
             </button>
           </motion.div>
         )}
-      </section>
-
-      <section className="card p-8 space-y-6">
-        <h3 className="text-xl font-bold flex items-center gap-2">
-          <Clock className="text-primary" size={24} /> Pomodoro Ayarları
-        </h3>
-        <p className="text-sm text-foreground/60">Odaklanma seanslarını kendi çalışma stiline göre uyarla.</p>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-foreground/40">Çalışma (dk)</label>
-            <input 
-              type="number"
-              value={pomodoro.workTime || 0}
-              onChange={e => setPomodoro({ ...pomodoro, workTime: parseInt(e.target.value) || 0 })}
-              className="w-full p-3 rounded-xl border border-border bg-background text-sm"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-foreground/40">Kısa Mola (dk)</label>
-            <input 
-              type="number"
-              value={pomodoro.shortBreak || 0}
-              onChange={e => setPomodoro({ ...pomodoro, shortBreak: parseInt(e.target.value) || 0 })}
-              className="w-full p-3 rounded-xl border border-border bg-background text-sm"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-foreground/40">Uzun Mola (dk)</label>
-            <input 
-              type="number"
-              value={pomodoro.longBreak || 0}
-              onChange={e => setPomodoro({ ...pomodoro, longBreak: parseInt(e.target.value) || 0 })}
-              className="w-full p-3 rounded-xl border border-border bg-background text-sm"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-xl border border-border">
-            <span className="text-sm font-medium">Bitiş Sesi</span>
-            <button 
-              onClick={() => setPomodoro({ ...pomodoro, soundEnabled: !pomodoro.soundEnabled })}
-              className={cn(
-                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-                pomodoro.soundEnabled ? "bg-primary" : "bg-secondary"
-              )}
-            >
-              <span className={cn(
-                "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                pomodoro.soundEnabled ? "translate-x-6" : "translate-x-1"
-              )} />
-            </button>
-          </div>
-          <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-xl border border-border">
-            <span className="text-sm font-medium">Molayı Otomatik Başlat</span>
-            <button 
-              onClick={() => setPomodoro({ ...pomodoro, autoStartBreaks: !pomodoro.autoStartBreaks })}
-              className={cn(
-                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-                pomodoro.autoStartBreaks ? "bg-primary" : "bg-secondary"
-              )}
-            >
-              <span className={cn(
-                "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                pomodoro.autoStartBreaks ? "translate-x-6" : "translate-x-1"
-              )} />
-            </button>
-          </div>
-        </div>
-        <button 
-          onClick={handleSave}
-          className="w-full px-6 py-3 bg-secondary hover:bg-secondary/80 rounded-xl font-bold text-sm transition-all"
-        >
-          Pomodoro Ayarlarını Kaydet
-        </button>
       </section>
 
       <section className="card p-8 space-y-6">
