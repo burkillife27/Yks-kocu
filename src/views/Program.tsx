@@ -151,7 +151,14 @@ export default function Program({ books, tasks, settings, routines, camps, onRef
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [customPrompt, setCustomPrompt] = useState('');
+  const [aiContext, setAiContext] = useState('');
   const [showConfig, setShowConfig] = useState(false);
+
+  useEffect(() => {
+    if (showConfig) {
+      storage.getAiContext().then(setAiContext);
+    }
+  }, [showConfig]);
   
   const navigateDate = (days: number) => {
     const d = new Date(selectedDate);
@@ -186,7 +193,11 @@ export default function Program({ books, tasks, settings, routines, camps, onRef
     try {
       const trials = await storage.getTrials();
       const gemini = new GeminiService(settings.apiKey, settings.aiModel);
-      const newTasks = await gemini.generateProgram(books, trials, settings, tasks, routines, selectedDate, camps, customPrompt);
+      
+      // Combine custom prompt with AI context from chat if applicable
+      const finalPrompt = customPrompt || (aiContext ? `Son sohbetimizdeki şu talimatları dikkate al: ${aiContext}` : '');
+      
+      const newTasks = await gemini.generateProgram(books, trials, settings, tasks, routines, selectedDate, camps, finalPrompt);
       
       // Preserve tasks for other dates
       const otherTasks = tasks.filter(t => t.date !== selectedDate);
@@ -560,13 +571,33 @@ export default function Program({ books, tasks, settings, routines, camps, onRef
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-foreground/40">Özel İstekler (Opsiyonel)</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold uppercase tracking-wider text-foreground/40">Özel İstekler (Opsiyonel)</label>
+                    {aiContext && (
+                      <button 
+                        onClick={() => {
+                          setCustomPrompt(prev => prev + (prev ? '\n' : '') + `Sohbetten gelen talimat: ${aiContext}`);
+                          setAiContext('');
+                        }}
+                        className="text-[10px] text-primary font-bold hover:underline"
+                      >
+                        Sohbet Talimatını Ekle
+                      </button>
+                    )}
+                  </div>
                   <textarea 
                     value={customPrompt}
                     onChange={e => setCustomPrompt(e.target.value)}
-                    placeholder="Örn: Sadece matematik odaklı olsun or Kamp modu: Geometri kitabını 5 günde bitir."
+                    placeholder={aiContext ? "Sohbetten gelen talimatlar otomatik eklenir veya buraya yazabilirsin." : "Örn: Sadece matematik odaklı olsun or Kamp modu: Geometri kitabını 5 günde bitir."}
                     className="w-full h-32 p-4 rounded-xl border border-border bg-background outline-none focus:ring-2 focus:ring-primary resize-none"
                   />
+                  {aiContext && !customPrompt && (
+                    <div className="p-3 bg-primary/5 border border-primary/10 rounded-xl">
+                      <p className="text-[10px] text-primary/60 font-medium italic">
+                        🔍 Yapay zeka ile son sohbetindeki talimatlar algılandı ve program oluştururken kullanılacaktır.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-3">

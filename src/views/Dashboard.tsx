@@ -186,7 +186,23 @@ export default function Dashboard({ books, trials, tasks, settings, warnings, ca
                       </div>
                       {suggestion.actionLabel && (
                         <div className="flex justify-end">
-                          <button className="px-3 py-1.5 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20">
+                          <button 
+                            onClick={() => {
+                              const label = suggestion.actionLabel?.toLowerCase() || '';
+                              if (label.includes('program') || label.includes('plan')) {
+                                document.querySelector('button[id="program"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+                                // Fallback if querySelector fails (though it should work with our activeView logic)
+                                window.dispatchEvent(new CustomEvent('change-view', { detail: 'program' }));
+                              } else if (label.includes('deneme')) {
+                                window.dispatchEvent(new CustomEvent('change-view', { detail: 'trials' }));
+                              } else if (label.includes('kitap') || label.includes('kaynak')) {
+                                window.dispatchEvent(new CustomEvent('change-view', { detail: 'books' }));
+                              } else if (label.includes('süre') || label.includes('ayar')) {
+                                window.dispatchEvent(new CustomEvent('change-view', { detail: 'settings' }));
+                              }
+                            }}
+                            className="px-3 py-1.5 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20 active:scale-95"
+                          >
                             {suggestion.actionLabel}
                           </button>
                         </div>

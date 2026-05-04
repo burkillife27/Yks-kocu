@@ -20,31 +20,44 @@ import ReactMarkdown from 'react-markdown';
 import { cn } from '../lib/utils.ts';
 import { storage } from '../lib/storage.ts';
 
-const MessageItem = memo(({ m, i }: { m: ChatMessage, i: number }) => (
-  <motion.div 
-    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-    animate={{ opacity: 1, y: 0, scale: 1 }}
-    className={cn(
-      "flex gap-4 max-w-[85%]",
-      m.role === 'user' ? "ml-auto flex-row-reverse" : ""
-    )}
-  >
-    <div className={cn(
-      "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm",
-      m.role === 'assistant' ? "bg-primary text-primary-foreground" : "bg-card border border-border"
-    )}>
-      {m.role === 'assistant' ? <Bot size={20} /> : <User size={20} />}
-    </div>
-    <div className={cn(
-      "p-4 rounded-2xl text-sm leading-relaxed",
-      m.role === 'assistant' ? "bg-secondary/80 text-foreground" : "bg-primary text-primary-foreground"
-    )}>
-      <div className="markdown-body">
-        <ReactMarkdown>{m.content}</ReactMarkdown>
+const MessageItem = memo(({ m }: { m: ChatMessage }) => {
+  const date = new Date(m.timestamp);
+  const timeStr = date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      className={cn(
+        "flex gap-4 max-w-[85%]",
+        m.role === 'user' ? "ml-auto flex-row-reverse" : ""
+      )}
+    >
+      <div className={cn(
+        "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm",
+        m.role === 'assistant' ? "bg-primary text-primary-foreground" : "bg-card border border-border"
+      )}>
+        {m.role === 'assistant' ? <Bot size={20} /> : <User size={20} />}
       </div>
-    </div>
-  </motion.div>
-));
+      <div className="flex flex-col gap-1">
+        <div className={cn(
+          "p-4 rounded-2xl text-sm leading-relaxed relative group",
+          m.role === 'assistant' ? "bg-secondary/80 text-foreground" : "bg-primary text-primary-foreground"
+        )}>
+          <div className="markdown-body">
+            <ReactMarkdown>{m.content}</ReactMarkdown>
+          </div>
+        </div>
+        <span className={cn(
+          "text-[10px] font-bold opacity-30 px-2",
+          m.role === 'user' ? "text-right" : "text-left"
+        )}>
+          {timeStr}
+        </span>
+      </div>
+    </motion.div>
+  );
+});
 
 export default function Chat({ books, trials, tasks, settings, camps, onRefresh }: { 
   books: Book[], 
@@ -242,6 +255,11 @@ export default function Chat({ books, trials, tasks, settings, camps, onRefresh 
         timestamp: Date.now()
       };
 
+      // Save context for Program generation if it looks like program instructions
+      if (responseText.includes("YAPILACAKLAR") || responseText.includes("GÖREV") || responseText.includes("PROGRAM")) {
+        await storage.saveAiContext(responseText);
+      }
+
       const finalSession = {
         ...sessionToUpdate,
         messages: [...sessionToUpdate.messages, assistantMsg],
@@ -419,9 +437,23 @@ export default function Chat({ books, trials, tasks, settings, camps, onRefresh 
             className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar"
           >
             <AnimatePresence initial={false}>
-              {messages.map((m, i) => (
-                <MessageItem key={m.timestamp || i} m={m} i={i} />
-              ))}
+              {messages.map((m, i) => {
+                const prevMsg = messages[i - 1];
+                const showDate = !prevMsg || new Date(prevMsg.timestamp).toDateString() !== new Date(m.timestamp).toDateString();
+                
+                return (
+                  <React.Fragment key={m.timestamp || i}>
+                    {showDate && (
+                      <div className="flex justify-center my-4">
+                        <span className="px-3 py-1 bg-secondary rounded-full text-[10px] font-black uppercase tracking-widest text-foreground/40">
+                          {new Date(m.timestamp).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </span>
+                      </div>
+                    )}
+                    <MessageItem m={m} />
+                  </React.Fragment>
+                );
+              })}
               {isTyping && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-4">
                   <div className="w-10 h-10 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center">
