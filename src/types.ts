@@ -112,6 +112,7 @@ export interface AppSettings {
     workTime: number;
     shortBreak: number;
     longBreak: number;
+    longBreakInterval: number;
     autoStartBreaks: boolean;
     autoStartWork: boolean;
     soundEnabled: boolean;

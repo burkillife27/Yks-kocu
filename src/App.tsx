@@ -209,7 +209,7 @@ export default function App() {
             {activeView === 'camps' && <Camps books={books} camps={camps} onRefresh={refreshData} />}
             {activeView === 'books' && <Books books={books} tasks={tasks} settings={settings} onRefresh={refreshData} />}
             {activeView === 'trials' && <Trials trials={trials} settings={settings} onRefresh={refreshData} />}
-            {activeView === 'pomodoro' && <Pomodoro tasks={tasks} settings={settings} />}
+            {activeView === 'pomodoro' && <Pomodoro tasks={tasks} settings={settings} onRefresh={refreshData} />}
             {activeView === 'chat' && <Chat books={books} trials={trials} tasks={tasks} settings={settings} camps={camps} onRefresh={refreshData} />}
             {activeView === 'settings' && <Settings settings={settings} routines={routines} books={books} onRefresh={refreshData} />}
           </motion.div>
