@@ -95,6 +95,7 @@ export const storage = {
         workTime: 25,
         shortBreak: 5,
         longBreak: 15,
+        longBreakInterval: 4,
         autoStartBreaks: false,
         autoStartWork: false,
         soundEnabled: true
