@@ -28,8 +28,9 @@ import Settings from './views/Settings.tsx';
 import Camps from './views/Camps.tsx';
 import Heatmap from './views/Heatmap.tsx';
 import Analytics from './views/Analytics.tsx';
+import Timeline from './views/Timeline.tsx';
 
-type View = 'dashboard' | 'program' | 'books' | 'trials' | 'pomodoro' | 'chat' | 'settings' | 'camps' | 'heatmap' | 'analytics';
+type View = 'dashboard' | 'program' | 'books' | 'trials' | 'pomodoro' | 'chat' | 'settings' | 'camps' | 'heatmap' | 'analytics' | 'timeline';
 
 export default function App() {
   const [activeView, setActiveView] = useState<View>('dashboard');
@@ -67,6 +68,12 @@ export default function App() {
       document.documentElement.setAttribute('data-theme', s.theme);
     }
     loadData();
+
+    const handleViewChange = (e: any) => {
+      setActiveView(e.detail);
+    };
+    window.addEventListener('change-view', handleViewChange);
+    return () => window.removeEventListener('change-view', handleViewChange);
   }, []);
 
   const refreshData = useCallback(async () => {
@@ -101,6 +108,7 @@ export default function App() {
     { id: 'program', label: 'Program', icon: Calendar },
     { id: 'analytics', label: 'Grafikler', icon: BarChart3 },
     { id: 'heatmap', label: 'Isı Haritası', icon: LayoutGrid }, 
+    { id: 'timeline', label: 'Zaman Çizelgesi', icon: Calendar },
     { id: 'camps', label: 'Kamplar', icon: Rocket },
     { id: 'books', label: 'Kitaplarım', icon: BookOpen },
     { id: 'trials', label: 'Denemeler', icon: BarChart3 },
@@ -205,6 +213,7 @@ export default function App() {
             {activeView === 'dashboard' && <Dashboard books={books} trials={trials} tasks={tasks} settings={settings} warnings={warnings} camps={camps} onRefresh={refreshData} onViewAnalytics={() => setActiveView('analytics')} />}
             {activeView === 'program' && <Program books={books} tasks={tasks} settings={settings} routines={routines} camps={camps} onRefresh={refreshData} />}
             {activeView === 'heatmap' && <Heatmap tasks={tasks} settings={settings} />}
+            {activeView === 'timeline' && <Timeline />}
             {activeView === 'analytics' && <Analytics trials={trials} tasks={tasks} settings={settings} />}
             {activeView === 'camps' && <Camps books={books} camps={camps} onRefresh={refreshData} />}
             {activeView === 'books' && <Books books={books} tasks={tasks} settings={settings} onRefresh={refreshData} />}
