@@ -1,5 +1,5 @@
 import { get, set } from 'idb-keyval';
-import { Book, Trial, Task, AppSettings, AIWarning, UserRoutine, ApiUsage, Camp, ChatSession } from '../types.ts';
+import { Book, Trial, Task, AppSettings, AIWarning, UserRoutine, ApiUsage, Camp, ChatSession, StudySession } from '../types.ts';
 
 const KEYS = {
   BOOKS: 'yks_books',
@@ -11,6 +11,8 @@ const KEYS = {
   USAGE: 'yks_api_usage',
   CAMPS: 'yks_camps',
   CHAT_SESSIONS: 'yks_chat_sessions',
+  STUDY_SESSIONS: 'yks_study_sessions',
+  AI_CONTEXT: 'yks_ai_context',
 };
 
 export const storage = {
@@ -125,5 +127,21 @@ export const storage = {
   },
   async saveChatSessions(sessions: ChatSession[]) {
     await set(KEYS.CHAT_SESSIONS, sessions);
+  },
+  async getStudySessions(): Promise<StudySession[]> {
+    return (await get(KEYS.STUDY_SESSIONS)) || [];
+  },
+  async saveStudySessions(sessions: StudySession[]) {
+    await set(KEYS.STUDY_SESSIONS, sessions);
+  },
+  async addStudySession(session: StudySession) {
+    const sessions = await this.getStudySessions();
+    await this.saveStudySessions([session, ...sessions]);
+  },
+  async saveAiContext(context: string) {
+    await set(KEYS.AI_CONTEXT, context);
+  },
+  async getAiContext(): Promise<string> {
+    return (await get(KEYS.AI_CONTEXT)) || '';
   }
 };
