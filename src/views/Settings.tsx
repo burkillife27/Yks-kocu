@@ -167,40 +167,30 @@ export default function Settings({ settings, routines, books, onRefresh }: { set
                 <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-primary">Gemini 1.5 Flash</span>
-                    <span className="px-2 py-0.5 bg-green-500/10 text-green-500 text-[10px] font-bold rounded uppercase">Ücretsiz Kota (Yüksek)</span>
+                    <span className="px-2 py-0.5 bg-green-500/10 text-green-500 text-[10px] font-bold rounded uppercase">Tavsiye Edilen (Hızlı & Güncel)</span>
                   </div>
                   <p className="text-xs leading-relaxed text-foreground/70">
-                    Hızlı yanıt süresi ve yüksek işlem kapasitesi ile günlük rutin planlamaları için idealdir. Daha az karmaşık görevlerde mükemmel performans sunar.
+                    En güncel stabil sürüm. Çok hızlı yanıt süresi ve yüksek kapasite ile günlük planlamalar için idealdir.
                   </p>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-secondary/50 border border-border space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-bold">Gemini 1.5 Pro</span>
-                    <span className="px-2 py-0.5 bg-amber-500/10 text-amber-500 text-[10px] font-bold rounded uppercase">Sınırlı Kota</span>
+                    <span className="px-2 py-0.5 bg-amber-500/10 text-amber-500 text-[10px] font-bold rounded uppercase">Gelişmiş Zeka</span>
                   </div>
                   <p className="text-xs leading-relaxed text-foreground/70">
-                    Üst düzey mantık yürütme ve problem çözme yeteneği. Çok karmaşık çalışma programları ve detaylı analizler için en iyisidir ancak ücretsiz kotası daha hızlı tükenebilir.
+                    Karmaşık mantık yürütme ve detaylı akademik analizler için en iyi tercihtir.
                   </p>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-secondary/30 border border-border space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold">Gemini 2.0 Flash Exp</span>
-                    <span className="px-2 py-0.5 bg-blue-500/10 text-blue-500 text-[10px] font-bold rounded uppercase">Deneysel</span>
+                    <span className="font-bold">Deneysel Modeller</span>
+                    <span className="px-2 py-0.5 bg-blue-500/10 text-blue-500 text-[10px] font-bold rounded uppercase">Beta</span>
                   </div>
                   <p className="text-xs leading-relaxed text-foreground/70">
-                    Yeni nesil mimari üzerine kurulu, oldukça hızlı bir deneysel modeldir. En güncel özellikleri test etmek isteyenler için uygundur.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-secondary/30 border border-border space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold">Gemini 3 Flash Preview</span>
-                    <span className="px-2 py-0.5 bg-purple-500/10 text-purple-500 text-[10px] font-bold rounded uppercase">Ön İzleme</span>
-                  </div>
-                  <p className="text-xs leading-relaxed text-foreground/70">
-                    En yeni önizleme modeli. Sürekli geliştirilmekte olan, en güncel zekaya sahip ama bazen kararsızlıklar gösterebilen ileri teknoloji bir modeldir.
+                    Gemini 2.0 ve 3 Preview gibi yeni nesil mimarileri test etmek isteyenler içindir.
                   </p>
                 </div>
               </div>
@@ -286,10 +276,9 @@ export default function Settings({ settings, routines, books, onRefresh }: { set
                 onChange={e => setAiModel(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-border bg-background outline-none focus:ring-2 focus:ring-primary h-[46px]"
               >
-                <option value="gemini-1.5-flash">Gemini 1.5 Flash (Ücretsiz & Hızlı)</option>
-                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Zeki & Sınırlı)</option>
-                <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp (Deneysel)</option>
-                <option value="gemini-3-flash-preview">Gemini 3 Flash Preview (Yeni)</option>
+                <option value="gemini-3-flash-preview">Gemini 3 Flash (En Yeni & En Hızlı - Tavsiye Edilen)</option>
+                <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (En Zeki & Detaylı Analiz İçin)</option>
+                <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Hızlı & Deneysel)</option>
               </select>
             </div>
           </div>
