@@ -1,3 +1,13 @@
+export interface StudySession {
+  id: string;
+  taskId?: string;
+  taskTitle?: string;
+  branch?: ExamBranch;
+  startTime: number; // timestamp
+  endTime: number; // timestamp
+  type: 'pomodoro' | 'stopwatch';
+}
+
 export type BookType = "Konu Anlatım" | "Soru Bankası" | "Deneme";
 export type ExamBranch = "TYT Matematik" | "TYT Türkçe" | "TYT Fen" | "TYT Sosyal" | "AYT Matematik" | "AYT Fen" | "AYT Fizik" | "AYT Kimya" | "AYT Biyoloji" | "AYT Edebiyat-Sosyal" | "AYT Sosyal-2" | "Geometri" | "TYT GENEL" | "AYT GENEL";
 
@@ -40,6 +50,7 @@ export interface Task {
   status: "pending" | "completed" | "skipped";
   completedAt?: number;
   isManual?: boolean;
+  userNote?: string;
 }
 
 export interface TrialMistake {
@@ -151,4 +162,9 @@ export interface ChatSession {
   messages: ChatMessage[];
   createdAt: number;
   updatedAt: number;
+}
+
+export interface DailyNote {
+  date: string; // YYYY-MM-DD
+  content: string;
 }
