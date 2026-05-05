@@ -1,5 +1,5 @@
 import { get, set } from 'idb-keyval';
-import { Book, Trial, Task, AppSettings, AIWarning, UserRoutine, ApiUsage, Camp, ChatSession, StudySession } from '../types.ts';
+import { Book, Trial, Task, AppSettings, AIWarning, UserRoutine, ApiUsage, Camp, ChatSession, StudySession, DailyNote } from '../types.ts';
 
 const KEYS = {
   BOOKS: 'yks_books',
@@ -13,6 +13,7 @@ const KEYS = {
   CHAT_SESSIONS: 'yks_chat_sessions',
   STUDY_SESSIONS: 'yks_study_sessions',
   AI_CONTEXT: 'yks_ai_context',
+  DAILY_NOTES: 'yks_daily_notes',
 };
 
 export const storage = {
@@ -143,5 +144,25 @@ export const storage = {
   },
   async getAiContext(): Promise<string> {
     return (await get(KEYS.AI_CONTEXT)) || '';
+  },
+  async getDailyNotes(): Promise<DailyNote[]> {
+    return (await get(KEYS.DAILY_NOTES)) || [];
+  },
+  async saveDailyNotes(notes: DailyNote[]) {
+    await set(KEYS.DAILY_NOTES, notes);
+  },
+  async getDailyNoteByDate(date: string): Promise<DailyNote | undefined> {
+    const notes = await this.getDailyNotes();
+    return notes.find(n => n.date === date);
+  },
+  async saveDailyNote(date: string, content: string) {
+    let notes = await this.getDailyNotes();
+    const index = notes.findIndex(n => n.date === date);
+    if (index > -1) {
+      notes[index].content = content;
+    } else {
+      notes.push({ date, content });
+    }
+    await this.saveDailyNotes(notes);
   }
 };
