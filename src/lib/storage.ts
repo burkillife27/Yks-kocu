@@ -83,7 +83,7 @@ export const storage = {
       studyStartDate: new Date().toISOString().split('T')[0],
       targetNets: { tyt: 100, ayt: 75 },
       dailyStudyMinutes: { 0: 300, 1: 300, 2: 300, 3: 300, 4: 300, 5: 360, 6: 360 },
-      aiModel: 'gemini-1.5-flash',
+      aiModel: 'gemini-3-flash-preview',
       aiInstructions: "Öğrenciyi sürekli onaylayan bir 'yankı odası' olma. Gerektiğinde mevcut çalışma planının yetersizliğini yüzüne vur ve onu daha yüksek bir performansa zorla. Bir adım önde olduğunu hissettir.",
       personalBio: '',
       adaptiveStudyPlan: {
