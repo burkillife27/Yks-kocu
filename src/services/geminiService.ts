@@ -57,6 +57,23 @@ export class GeminiService {
 
     const activeCamp = camps.find(c => targetDate >= c.startDate && targetDate <= c.endDate && c.isActive);
 
+    const allDailyNotes = await storage.getDailyNotes();
+    const currentNote = allDailyNotes.find(n => n.date === targetDate);
+    const recentNotes = allDailyNotes
+      .filter(n => n.date < targetDate)
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 5);
+
+    const recentFeedback = history
+      .filter(t => t.status === 'completed' && t.userNote)
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 10)
+      .map(t => ({
+        date: t.date,
+        title: t.bookId ? books.find(b => b.id === t.bookId)?.title : t.title,
+        note: t.userNote
+      }));
+
     const performanceAnalysis = books.map(book => {
       const bookTasks = history.filter(t => t.bookId === book.id && t.status === 'completed' && t.actualMinutes && t.unitsCompleted);
       if (bookTasks.length === 0) return null;
@@ -80,6 +97,9 @@ export class GeminiService {
       - Hız Analizi: ${JSON.stringify(performanceAnalysis)}
       - Deneme Netleri: ${JSON.stringify(trials)}
       - Hedefler: ${JSON.stringify(settings.targetNets)}
+      - Bugün İçin Not: ${currentNote?.content || "Yok"}
+      - Görev Özelinde Geri Bildirimler: ${JSON.stringify(recentFeedback)}
+      - Geçmiş Günlere Ait Notlar (Engeller/Durumlar): ${JSON.stringify(recentNotes)}
       - Rutinler: ${JSON.stringify(routines)}
       - Özel İstek: ${customRequest || "Dengeli bir program yap."}
       - Aktif Kamp: ${activeCamp ? activeCamp.title : "Yok"}
