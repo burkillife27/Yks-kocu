@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Task, AppSettings } from '../types.ts';
+import { Task, AppSettings, ExamBranch } from '../types.ts';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Timer as Clock, 
@@ -17,7 +17,8 @@ import {
   Settings as SettingsIcon,
   X,
   Save,
-  Trophy
+  Trophy,
+  ChevronDown
 } from 'lucide-react';
 import { cn, formatDuration } from '../lib/utils.ts';
 import { storage } from '../lib/storage.ts';
@@ -25,8 +26,15 @@ import { storage } from '../lib/storage.ts';
 type Mode = 'focus' | 'short-break' | 'long-break';
 type TimerType = 'pomodoro' | 'stopwatch';
 
+const BRANCHES: ExamBranch[] = [
+  "TYT Matematik", "TYT Türkçe", "TYT Fen", "TYT Sosyal",
+  "AYT Matematik", "AYT Fen", "AYT Edebiyat-Sosyal", "Geometri"
+];
+
 export default function Pomodoro({ tasks, settings, onRefresh }: { tasks: Task[], settings: AppSettings, onRefresh: () => void }) {
   const [showSettings, setShowSettings] = useState(false);
+  const [showBranchSelector, setShowBranchSelector] = useState(false);
+  const [selectedBranch, setSelectedBranch] = useState<ExamBranch | null>(null);
   const timerConfig = settings.pomodoro || {
     workTime: 25,
     shortBreak: 5,
@@ -98,6 +106,11 @@ export default function Pomodoro({ tasks, settings, onRefresh }: { tasks: Task[]
     return saved ? JSON.parse(saved).sessionsCompleted : 0;
   });
 
+  const [sessionStartTime, setSessionStartTime] = useState<number | null>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved).sessionStartTime : null;
+  });
+
   const [activeTask, setActiveTask] = useState<Task | null>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     const data = saved ? JSON.parse(saved) : null;
@@ -118,6 +131,7 @@ export default function Pomodoro({ tasks, settings, onRefresh }: { tasks: Task[]
       stopwatchTime,
       isActive,
       sessionsCompleted,
+      sessionStartTime,
       activeTaskId: activeTask?.id || null,
       lastUpdated: Date.now()
     };
@@ -196,9 +210,49 @@ export default function Pomodoro({ tasks, settings, onRefresh }: { tasks: Task[]
     };
   }, [isActive, timerType]);
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     setIsActive(false);
     playSound();
+    
+    // Save session to history
+    if (sessionStartTime) {
+      const endTime = Date.now();
+      const finalBranch = activeTask?.branch || selectedBranch;
+      const session = {
+        id: crypto.randomUUID(),
+        taskId: activeTask?.id,
+        taskTitle: activeTask?.title || (finalBranch ? `${finalBranch} Çalışması` : 'Genel Çalışma'),
+        branch: finalBranch,
+        startTime: sessionStartTime,
+        endTime: endTime,
+        type: timerType
+      };
+      await storage.addStudySession(session as any);
+
+      // Update task total minutes and sessions
+      if (activeTask) {
+        const minutesSpent = Math.max(1, Math.round((endTime - sessionStartTime) / 60000));
+        const updatedTasks = tasks.map(t => {
+          if (t.id === activeTask.id) {
+            const newSessions = [...(t.sessions || []), {
+              completedUnits: 0, // we don't know this exactly from pomodoro yet
+              minutesSpent,
+              at: endTime
+            }];
+            return {
+              ...t,
+              actualMinutes: (t.actualMinutes || 0) + minutesSpent,
+              sessions: newSessions
+            };
+          }
+          return t;
+        });
+        await storage.saveTasks(updatedTasks);
+        onRefresh();
+      }
+
+      setSessionStartTime(null);
+    }
     
     if (timerType === 'pomodoro') {
       let nextMode: Mode = 'focus';
@@ -237,9 +291,15 @@ export default function Pomodoro({ tasks, settings, onRefresh }: { tasks: Task[]
     }
   }, [mode, timerType, settings.pomodoro]);
 
-  const toggle = () => setIsActive(!isActive);
+  const toggle = () => {
+    if (!isActive && !sessionStartTime) {
+      setSessionStartTime(Date.now());
+    }
+    setIsActive(!isActive);
+  };
   const reset = () => {
     setIsActive(false);
+    setSessionStartTime(null);
     if (timerType === 'pomodoro') {
       setTimeLeft(configs[mode].time);
     } else {
@@ -427,14 +487,63 @@ export default function Pomodoro({ tasks, settings, onRefresh }: { tasks: Task[]
          )}
       </div>
 
+      {/* Branch Selection */}
+      {!activeTask && (
+        <div className="relative">
+          <button 
+            onClick={() => setShowBranchSelector(!showBranchSelector)}
+            className="flex items-center gap-3 px-6 py-3 bg-secondary/30 hover:bg-secondary/50 border border-border rounded-2xl transition-all"
+          >
+            <div className={cn(
+              "w-3 h-3 rounded-full",
+              selectedBranch ? "bg-primary" : "bg-foreground/20"
+            )} />
+            <span className="text-sm font-bold uppercase tracking-widest text-foreground/60">
+              {selectedBranch || 'Ders Seçilmedi'}
+            </span>
+            <ChevronDown size={16} className={cn("transition-transform", showBranchSelector ? "rotate-180" : "")} />
+          </button>
+
+          <AnimatePresence>
+            {showBranchSelector && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-64 bg-card border border-border rounded-2xl shadow-2xl p-2 z-40 grid grid-cols-1 gap-1 max-h-64 overflow-y-auto"
+              >
+                <button 
+                  onClick={() => { setSelectedBranch(null); setShowBranchSelector(false); }}
+                  className="w-full text-left p-3 rounded-xl hover:bg-secondary/50 text-xs font-bold uppercase tracking-widest"
+                >
+                  Genel / Diğer
+                </button>
+                {BRANCHES.map(branch => (
+                  <button 
+                    key={branch}
+                    onClick={() => { setSelectedBranch(branch); setShowBranchSelector(false); }}
+                    className={cn(
+                      "w-full text-left p-3 rounded-xl hover:bg-secondary/50 text-xs font-bold uppercase tracking-widest",
+                      selectedBranch === branch ? "bg-primary/10 text-primary" : ""
+                    )}
+                  >
+                    {branch}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
       {activeTask && (
         <div className="card p-4 w-full max-w-md flex items-center gap-4 bg-primary/5 border-primary/20">
           <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
             <Brain size={20} />
           </div>
           <div className="flex-1">
-             <p className="text-[10px] font-bold uppercase text-primary tracking-widest">Şu Anki Görev</p>
-             <p className="font-bold text-sm">{activeTask.unitsToStudy} Soru/Sayfa Çalışması</p>
+             <p className="text-[10px] font-bold uppercase text-primary tracking-widest">{activeTask.branch || 'Görev'}</p>
+             <p className="font-bold text-sm">{activeTask.title}</p>
           </div>
           <button onClick={() => setActiveTask(null)} className="text-foreground/20 hover:text-foreground/60 p-2">
             <RotateCcw size={16} />

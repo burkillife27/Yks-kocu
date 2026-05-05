@@ -33,7 +33,8 @@ const TaskItem = React.memo(({
   onDelete, 
   onStart, 
   deletingTaskId, 
-  setDeletingTaskId 
+  setDeletingTaskId,
+  onUpdateNote
 }: { 
   task: Task, 
   book?: Book, 
@@ -41,88 +42,105 @@ const TaskItem = React.memo(({
   onDelete: (id: string) => void, 
   onStart: (task: Task) => void,
   deletingTaskId: string | null,
-  setDeletingTaskId: (id: string | null) => void
+  setDeletingTaskId: (id: string | null) => void,
+  onUpdateNote: (id: string, note: string) => void
 }) => {
   const isCompleted = task.status === 'completed';
+  const [isEditingNote, setIsEditingNote] = useState(false);
+  const [noteValue, setNoteValue] = useState(task.userNote || '');
+
+  const handleNoteSave = () => {
+    onUpdateNote(task.id, noteValue);
+    setIsEditingNote(false);
+  };
 
   return (
     <motion.div 
       layout
       className={cn(
-        "card p-6 flex flex-wrap items-center justify-between gap-4 transition-all",
+        "card p-6 flex flex-col gap-4 transition-all",
         isCompleted && "opacity-60 bg-secondary/30"
       )}
     >
-      <div className="flex items-center gap-4 flex-1">
-        <button 
-          onClick={() => onToggle(task.id)}
-          className={cn(
-            "w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors",
-            isCompleted ? "bg-green-500 border-green-500 text-white" : "border-foreground/20 hover:border-primary"
-          )}
-        >
-          {isCompleted && <CheckCircle2 size={16} />}
-        </button>
-        <div>
-          <h3 className={cn("font-bold", isCompleted && "line-through")}>
-              {task.bookId ? (book?.title || 'Bilinmeyen Kitap') : (task.title || 'Başlıksız Görev')}
-              {task.isManual && <span className="ml-2 text-[8px] px-1.5 py-0.5 bg-secondary text-foreground/40 rounded uppercase tracking-tighter">Manuel</span>}
-          </h3>
-          <p className="text-xs text-foreground/40 font-medium">
-            {task.bookId ? `${task.unitsCompleted || 0}/${task.unitsToStudy} ${book?.unitType} · ` : ''}
-            {task.actualMinutes ? `${task.actualMinutes} dk çalışıldı` : `${task.estimatedMinutes} dk tahmini`}
-          </p>
-          {task.description && (
-            <p className="mt-2 text-xs text-foreground/50 italic bg-secondary/30 p-2 rounded-lg border-l-2 border-primary/30">
-              {task.description}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3">
-        {!isCompleted && (
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-4 flex-1">
           <button 
-             className="p-3 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all"
-             onClick={() => onStart(task)}
+            onClick={() => onToggle(task.id)}
+            className={cn(
+              "w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors",
+              isCompleted ? "bg-green-500 border-green-500 text-white" : "border-foreground/20 hover:border-primary"
+            )}
           >
-            <Play size={18} fill="currentColor" />
+            {isCompleted && <CheckCircle2 size={16} />}
           </button>
-        )}
-        <div className="relative">
+          <div>
+            <h3 className={cn("font-bold", isCompleted && "line-through")}>
+                {task.bookId ? (book?.title || 'Bilinmeyen Kitap') : (task.title || 'Başlıksız Görev')}
+                {task.isManual && <span className="ml-2 text-[8px] px-1.5 py-0.5 bg-secondary text-foreground/40 rounded uppercase tracking-tighter">Manuel</span>}
+            </h3>
+            <p className="text-xs text-foreground/40 font-medium">
+              {task.bookId ? `${task.unitsCompleted || 0}/${task.unitsToStudy} ${book?.unitType} · ` : ''}
+              {task.actualMinutes ? `${task.actualMinutes} dk çalışıldı` : `${task.estimatedMinutes} dk tahmini`}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {!isCompleted && (
+            <button 
+               className="p-3 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all"
+               onClick={() => onStart(task)}
+            >
+              <Play size={18} fill="currentColor" />
+            </button>
+          )}
+          
           <button 
-            onClick={() => setDeletingTaskId(deletingTaskId === task.id ? null : task.id)}
+            onClick={() => setIsEditingNote(!isEditingNote)}
             className={cn(
               "p-3 rounded-xl transition-all",
-              deletingTaskId === task.id ? "bg-red-500 text-white" : "text-foreground/20 hover:text-red-500 hover:bg-red-500/10"
+              (task.userNote || isEditingNote) ? "bg-orange-500/10 text-orange-500" : "text-foreground/20 hover:text-orange-500 hover:bg-orange-500/10"
             )}
+            title="Not Ekle/Düzenle"
           >
-            <Trash2 size={18} />
+             <Info size={18} />
           </button>
-          <AnimatePresence>
-            {deletingTaskId === task.id && (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.9, x: 10 }}
-                animate={{ opacity: 1, scale: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0.9, x: 10 }}
-                className="absolute bottom-full right-0 mb-2 w-32 p-2 bg-card border border-border rounded-lg shadow-2xl z-20 flex gap-2"
-              >
-                <button 
-                  onClick={() => onDelete(task.id)}
-                  className="flex-1 py-1 bg-red-500 text-white text-[10px] font-bold rounded-md"
+
+          <div className="relative">
+            <button 
+              onClick={() => setDeletingTaskId(deletingTaskId === task.id ? null : task.id)}
+              className={cn(
+                "p-3 rounded-xl transition-all",
+                deletingTaskId === task.id ? "bg-red-500 text-white" : "text-foreground/20 hover:text-red-500 hover:bg-red-500/10"
+              )}
+            >
+              <Trash2 size={18} />
+            </button>
+            <AnimatePresence>
+              {deletingTaskId === task.id && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9, x: 10 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, x: 10 }}
+                  className="absolute bottom-full right-0 mb-2 w-32 p-2 bg-card border border-border rounded-lg shadow-2xl z-20 flex gap-2"
                 >
-                  Sil
-                </button>
-                <button 
-                  onClick={() => setDeletingTaskId(null)}
-                  className="flex-1 py-1 bg-secondary text-[10px] font-bold rounded-md"
-                >
-                  Vazgeç
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                  <button 
+                    onClick={() => onDelete(task.id)}
+                    className="flex-1 py-1 bg-red-500 text-white text-[10px] font-bold rounded-md"
+                  >
+                    Sil
+                  </button>
+                  <button 
+                    onClick={() => setDeletingTaskId(null)}
+                    className="flex-1 py-1 bg-secondary text-[10px] font-bold rounded-md"
+                  >
+                    Vazgeç
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
           <div className="text-right min-w-[80px] space-y-1">
             <p className="text-[10px] font-bold uppercase tracking-widest text-foreground/40">Branş</p>
             <p className="text-xs font-bold">{task.branch || book?.branch || 'Genel'}</p>
@@ -135,7 +153,55 @@ const TaskItem = React.memo(({
               </div>
             )}
           </div>
+        </div>
       </div>
+
+      {(task.description || isEditingNote || task.userNote) && (
+        <div className="space-y-3 pt-2 border-t border-border/50">
+          {task.description && (
+            <div>
+              <p className="text-[10px] font-black uppercase text-primary/40 tracking-widest mb-1">AI Açıklaması</p>
+              <p className="text-xs text-foreground/50 italic bg-secondary/30 p-2 rounded-lg border-l-2 border-primary/30">
+                {task.description}
+              </p>
+            </div>
+          )}
+          
+          {(isEditingNote || task.userNote) && (
+            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[10px] font-black uppercase text-orange-500/40 tracking-widest">Senin Notun</p>
+                {isEditingNote && (
+                  <button 
+                    onClick={handleNoteSave}
+                    className="text-[10px] font-bold text-orange-500 hover:underline"
+                  >
+                    Kaydet
+                  </button>
+                )}
+              </div>
+              
+              {isEditingNote ? (
+                <textarea
+                  autoFocus
+                  value={noteValue}
+                  onChange={(e) => setNoteValue(e.target.value)}
+                  onBlur={handleNoteSave}
+                  className="w-full p-2 text-xs bg-orange-500/5 rounded-lg border border-orange-500/20 outline-none focus:ring-1 focus:ring-orange-500 min-h-[60px]"
+                  placeholder="Doğru/yanlış sayısı, çalışma ortamı, neden aksadığı vb. not alabilirsin..."
+                />
+              ) : (
+                <p 
+                  onClick={() => setIsEditingNote(true)}
+                  className="text-xs text-orange-500/70 bg-orange-500/5 p-2 rounded-lg border-l-2 border-orange-500/30 cursor-pointer hover:bg-orange-500/10 transition-colors"
+                >
+                  {task.userNote}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </motion.div>
   );
 });
@@ -153,6 +219,13 @@ export default function Program({ books, tasks, settings, routines, camps, onRef
   const [customPrompt, setCustomPrompt] = useState('');
   const [aiContext, setAiContext] = useState('');
   const [showConfig, setShowConfig] = useState(false);
+  const [dailyNote, setDailyNote] = useState('');
+
+  useEffect(() => {
+    storage.getDailyNoteByDate(selectedDate).then(note => {
+      setDailyNote(note?.content || '');
+    });
+  }, [selectedDate]);
 
   useEffect(() => {
     if (showConfig) {
@@ -341,6 +414,8 @@ export default function Program({ books, tasks, settings, routines, camps, onRef
 
   const clearDate = async () => {
     await storage.saveTasks(tasks.filter(t => t.date !== selectedDate));
+    await storage.saveDailyNote(selectedDate, '');
+    setDailyNote('');
     setShowClearConfirm(false);
     onRefresh();
   };
@@ -356,6 +431,12 @@ export default function Program({ books, tasks, settings, routines, camps, onRef
   const handleStartTask = useCallback((task: Task) => {
     window.dispatchEvent(new CustomEvent('start-task', { detail: task }));
   }, []);
+
+  const updateTaskNote = async (taskId: string, note: string) => {
+    const updatedTasks = tasks.map(t => t.id === taskId ? { ...t, userNote: note } : t);
+    await storage.saveTasks(updatedTasks);
+    onRefresh();
+  };
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -518,6 +599,7 @@ export default function Program({ books, tasks, settings, routines, camps, onRef
               onStart={handleStartTask}
               deletingTaskId={deletingTaskId}
               setDeletingTaskId={setDeletingTaskId}
+              onUpdateNote={updateTaskNote}
             />
           ))
         ) : (
@@ -539,6 +621,32 @@ export default function Program({ books, tasks, settings, routines, camps, onRef
             </button>
           </div>
         )}
+      </div>
+
+      {/* Günlük Notlar (AI Bilgilendirme) */}
+      <div className="card p-6 bg-orange-500/5 border-dashed border-2 border-orange-500/10">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center">
+            <Info size={20} />
+          </div>
+          <div>
+            <h3 className="font-bold">Günün Özeti & AI Notu</h3>
+            <p className="text-[10px] text-foreground/40 uppercase font-black tracking-widest">Yapay Zekayı Bilgilendir</p>
+          </div>
+        </div>
+        <textarea
+          value={dailyNote}
+          onChange={(e) => {
+            const val = e.target.value;
+            setDailyNote(val);
+            storage.saveDailyNote(selectedDate, val);
+          }}
+          placeholder="Bugün program neden aksadı? Engeller neydi? (Örn: Hastaydım, gürültü vardı, odaklanamadım...)"
+          className="w-full h-24 p-4 rounded-xl bg-card border border-border outline-none focus:ring-2 focus:ring-orange-500/50 resize-none text-sm transition-all"
+        />
+        <p className="mt-2 text-[10px] text-foreground/40 italic">
+          * Bu notlar bir sonraki günün programı hazırlanırken AI asistanın tarafından dikkate alınacaktır.
+        </p>
       </div>
 
       {/* AI Config Modal */}
