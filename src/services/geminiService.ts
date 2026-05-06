@@ -74,6 +74,18 @@ export class GeminiService {
         note: t.userNote
       }));
 
+    // Deneme performans özeti
+    const trialSummary = trials
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 5)
+      .map(t => ({
+        tarih: t.date,
+        branş: t.branch || t.type,
+        net: t.net,
+        zorluk: t.difficulty,
+        hatalıKonular: t.mistakes.map(m => m.topic)
+      }));
+
     const performanceAnalysis = books.map(book => {
       const bookTasks = history.filter(t => t.bookId === book.id && t.status === 'completed' && t.actualMinutes && t.unitsCompleted);
       if (bookTasks.length === 0) return null;
@@ -95,7 +107,7 @@ export class GeminiService {
       ÖĞRENCİ VERİLERİ:
       - Mevcut Kitaplar: ${JSON.stringify(books)}
       - Hız Analizi: ${JSON.stringify(performanceAnalysis)}
-      - Deneme Netleri: ${JSON.stringify(trials)}
+      - Deneme Performans Özeti (Son 5): ${JSON.stringify(trialSummary)}
       - Hedefler: ${JSON.stringify(settings.targetNets)}
       - Bugün İçin Not: ${currentNote?.content || "Yok"}
       - Görev Özelinde Geri Bildirimler: ${JSON.stringify(recentFeedback)}
@@ -104,7 +116,9 @@ export class GeminiService {
       - Özel İstek: ${customRequest || "Dengeli bir program yap."}
       - Aktif Kamp: ${activeCamp ? activeCamp.title : "Yok"}
 
-      Lütfen ${targetDate} günü için uygun görevler ata. JSON formatında döndür.
+      Lütfen ${targetDate} günü için uygun görevler ata.
+      Önemli: Denemelerdeki konu eksiklerine ve hatalı konulara öncelik verebilirsin.
+      Verileri JSON formatında döndür.
     `;
 
     const schema = {
@@ -151,13 +165,35 @@ export class GeminiService {
     const aiContext = await storage.getAiContext();
     const activeCamp = camps.find(c => new Date().toISOString().split('T')[0] >= c.startDate && new Date().toISOString().split('T')[0] <= c.endDate && c.isActive);
 
+    // Son 5 denemenin detaylı analizi
+    const detailedTrials = trials
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 5)
+      .map(t => ({
+        tarih: t.date,
+        baslik: t.title,
+        tur: t.type,
+        net: t.net,
+        sure: t.durationMinutes,
+        zorluk: t.difficulty,
+        konuAnalizi: t.subjects?.map(s => `${s.name}: ${s.correct}D ${s.wrong}Y ${s.empty}B`),
+        hataYapilanKonular: t.mistakes.map(m => `${m.topic} (${m.count} hata)`)
+      }));
+
     const prompt = `
       Kişisel Bilgiler: ${settings.personalBio}
       Kitaplar: ${JSON.stringify(books.map(b => b.title))}
-      Netler: ${JSON.stringify(trials.map(t => t.net))}
+      
+      SON DENEME PERFORMANSLARI (DETAYLI):
+      ${JSON.stringify(detailedTrials)}
+      
+      HEDEF NETLER:
+      TYT: ${settings.targetNets.tyt}
+      AYT: ${settings.targetNets.ayt}
+
       ${aiContext ? `Bağlam: ${aiContext}` : ""}
       
-      YKS mentörü olarak öğrenciye tavsiyeler ver. JSON formatında döndür.
+      YKS mentörü olarak öğrencinin son deneme performanslarını (süre yönetimi, branş bazlı hatalar, konu eksikleri) analiz et ve gelişim odaklı tavsiyeler ver. JSON formatında döndür.
     `;
 
     const schema = {
@@ -190,6 +226,55 @@ export class GeminiService {
     } catch (e) {
       console.error("Error in chat:", e);
       return "Üzgünüm, bir hata oluştu.";
+    }
+  }
+
+  async getTrialAnalysis(trials: Trial[], settings: AppSettings): Promise<string> {
+    if (!this.ai) return "API Anahtarı ayarlanmamış.";
+
+    const trialData = trials
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 10)
+      .map(t => ({
+        tarih: t.date,
+        baslik: t.title,
+        tur: t.type,
+        branş: t.branch,
+        net: t.net,
+        dogru: t.correct,
+        yanlis: t.wrong,
+        bos: t.empty,
+        sure: t.durationMinutes,
+        zorluk: t.difficulty,
+        konuAnalizi: t.subjects?.map(s => `${s.name}: ${s.correct}D ${s.wrong}Y ${s.empty}B`),
+        hataDetaylari: t.mistakes.map(m => `${m.topic}: ${m.count} hata`)
+      }));
+
+    const prompt = `
+      ÖĞRENCİ PROFİLİ:
+      Hedef TYT Net: ${settings.targetNets.tyt}
+      Hedef AYT Net: ${settings.targetNets.ayt}
+      Kişisel Notlar: ${settings.personalBio || "Yok"}
+
+      DENEME VERİLERİ (SON 10):
+      ${JSON.stringify(trialData)}
+
+      Lütfen bu verileri bir YKS koçu gözüyle analiz et.
+      Aşağıdaki başlıkları içeren profesyonel, motive edici ve stratejik bir rapor hazırla:
+      1. Genel Trend ve Gelişim Özeti
+      2. Branş Bazlı Kritik Tespitler (Hangi derste süre/hata sorunu var?)
+      3. Tekrar Edilen Hatalar ve Konu Eksikleri
+      4. Süre Yönetimi Analizi
+      5. Somut Çalışma Önerileri
+
+      Yanıtını Markdown formatında, güzel bir dille yaz.
+    `;
+
+    try {
+      return await this.generate(prompt, null, "Sen uzman bir YKS eğitim koçusun. Verileri titizlikle inceler, öğrencinin göremediği detayları yakalarsın.");
+    } catch (e) {
+      console.error("Error in getTrialAnalysis:", e);
+      return "Analiz sırasında bir hata oluştu.";
     }
   }
 }
