@@ -1,8 +1,0 @@
-{
-  "name": "YKS Mentor AI",
-  "description": "AI-powered YKS exam guidance assistant with smart study planning, trial analysis, and proactive mentoring.",
-  "requestFramePermissions": [
-    "notifications"
-  ],
-  "majorCapabilities": []
-}
